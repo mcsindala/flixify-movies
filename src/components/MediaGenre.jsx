@@ -1,35 +1,51 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import MovieCard from './MovieCard';
+import { fetchMoviesByGenre, getImageUrl } from '../services/api';
 
 const MediaGenre = ({
   title,
   description = '',
   topRightButtons,
   showRank = false,
+  queryKey = 'moviesByGenre',
+  queryFn = null, // Custom query override if provided
 }) => {
+  const [selectedGenreId, setSelectedGenreId] = useState(0);
+
   const genres = [
     { id: 0, name: 'All' },
-    { id: 1, name: 'Action' },
-    { id: 2, name: 'Crime' },
-    { id: 3, name: 'Documentary' },
-    { id: 4, name: 'Adventure' },
-    { id: 5, name: 'Animation' },
-    { id: 6, name: 'Comedy' },
-    { id: 7, name: 'Drama' },
-    { id: 8, name: 'Family' },
-    { id: 9, name: 'History' },
-    { id: 10, name: 'Fantasy' },
-    { id: 11, name: 'Sci-fi' },
-    { id: 12, name: 'Romance' },
-    { id: 13, name: 'Horror' },
-    { id: 14, name: 'Thriller' },
+    { id: 28, name: 'Action' },
+    { id: 80, name: 'Crime' },
+    { id: 99, name: 'Documentary' },
+    { id: 12, name: 'Adventure' },
+    { id: 16, name: 'Animation' },
+    { id: 35, name: 'Comedy' },
+    { id: 18, name: 'Drama' },
+    { id: 10751, name: 'Family' },
+    { id: 36, name: 'History' },
+    { id: 14, name: 'Fantasy' },
+    { id: 878, name: 'Sci-fi' },
+    { id: 10749, name: 'Romance' },
+    { id: 27, name: 'Horror' },
+    { id: 53, name: 'Thriller' },
   ];
 
-  // Helper for top 3 rank medal colors on Top Rated pages
+  // If a custom queryFn is passed (like for Trending), use it. Otherwise, use genre fetching.
+  const {
+    data: movies,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: [queryKey, selectedGenreId],
+    queryFn: queryFn ? queryFn : () => fetchMoviesByGenre(selectedGenreId),
+  });
+
   const getRankColor = (rank) => {
-    if (rank === 1) return 'bg-amber-500 text-black'; // Gold
-    if (rank === 2) return 'bg-green-500 text-black'; // Green
-    if (rank === 3) return 'bg-amber-700 text-white'; // Bronze
-    return 'bg-purple-700 text-white'; // 4th onwards
+    if (rank === 1) return 'bg-amber-500 text-black';
+    if (rank === 2) return 'bg-green-500 text-black';
+    if (rank === 3) return 'bg-amber-700 text-white';
+    return 'bg-purple-700 text-white';
   };
 
   return (
@@ -45,34 +61,57 @@ const MediaGenre = ({
             <div className="flex items-center">{topRightButtons}</div>
           )}
         </div>
+
+        {/* Genre Switch Buttons */}
         <div className="flex items-center flex-wrap gap-2 mb-2">
-          {genres.map((genre) => (
-            <button
-              key={genre.id}
-              className="px-2 py-1 text-center rounded bg-gray-600/80 text-white text-sm hover:bg-purple-600/80 cursor-pointer transition-colors duration-200 active:bg-gray-500 "
-            >
-              {genre.name}
-            </button>
-          ))}
+          {genres.map((genre) => {
+            const isActive = selectedGenreId === genre.id;
+            return (
+              <button
+                key={genre.id}
+                onClick={() => setSelectedGenreId(genre.id)}
+                className={`px-3 py-1.5 text-center rounded text-sm cursor-pointer transition-all duration-200 active:scale-95 ${
+                  isActive
+                    ? 'bg-purple-600 text-white font-semibold shadow-lg shadow-purple-900/40'
+                    : 'bg-gray-600/80 text-white hover:bg-purple-600/50'
+                }`}
+              >
+                {genre.name}
+              </button>
+            );
+          })}
         </div>
       </div>
-      <div className="grid grid-cols-5 gap-x-2 gap-y-8 place-items-center">
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(2)} />
-        <MovieCard showRank={showRank} rank={3} rankBgColor={getRankColor(3)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(2)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(2)} />
-        <MovieCard showRank={showRank} rank={3} rankBgColor={getRankColor(3)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(2)} />
-        <MovieCard showRank={showRank} rank={9} rankBgColor={getRankColor(9)} />
-        <MovieCard showRank={showRank} rank={3} rankBgColor={getRankColor(3)} />
-      </div>
+
+      {/* Loading & Error States */}
+      {isLoading && (
+        <div className="text-gray-400 py-10 text-center">
+          Loading genre results...
+        </div>
+      )}
+      {isError && (
+        <div className="text-red-500 py-10 text-center">
+          Failed to fetch movies for this genre.
+        </div>
+      )}
+
+      {/* Dynamic Grid Results */}
+      {!isLoading && !isError && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8 place-items-center">
+          {movies?.map((movie, index) => (
+            <MovieCard
+              key={movie.id}
+              title={movie.title || movie.name}
+              rating={movie.vote_average?.toFixed(1)}
+              image={getImageUrl(movie.poster_path)}
+              releaseDate={movie.release_date || movie.first_air_date}
+              showRank={showRank}
+              rank={index + 1}
+              rankBgColor={getRankColor(index + 1)}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 };

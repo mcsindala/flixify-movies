@@ -2,10 +2,28 @@ import { useRef } from 'react';
 import ArrowRightIcon from '@mui/icons-material/ArrowForwardIos';
 import ArrowLeftIcon from '@mui/icons-material/ArrowBackIos';
 import MovieCard from './MovieCard';
+import { useQuery } from '@tanstack/react-query';
+import { getImageUrl } from '../services/api';
 
-const MediaRow = ({ title, description, showRank = false }) => {
+const MediaRow = ({
+  title,
+  description,
+  queryKey,
+  queryFn,
+  showRank = false,
+}) => {
   // Initialize the ref for the scrolling container
   const rowRef = useRef(null);
+
+  // Fetch data from the api
+  const {
+    data: movies,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: [queryKey],
+    queryFn: queryFn,
+  });
 
   // Handle the click scroll math
   const handleScroll = (direction) => {
@@ -59,26 +77,36 @@ const MediaRow = ({ title, description, showRank = false }) => {
         </div>
       </div>
 
-      <div
-        ref={rowRef}
-        className="flex items-center gap-6 pb-10 overflow-x-auto scroll-smooth no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-none]"
-      >
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(2)} />
-        <MovieCard showRank={showRank} rank={3} rankBgColor={getRankColor(3)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(2)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(2)} />
-        <MovieCard showRank={showRank} rank={3} rankBgColor={getRankColor(3)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={1} rankBgColor={getRankColor(1)} />
-        <MovieCard showRank={showRank} rank={2} rankBgColor={getRankColor(2)} />
-        <MovieCard showRank={showRank} rank={9} rankBgColor={getRankColor(9)} />
-        <MovieCard showRank={showRank} rank={3} rankBgColor={getRankColor(3)} />
-      </div>
+      {isLoading && (
+        <div className="text-gray-400 py-6">
+          Loading {title.toLowerCase()}...
+        </div>
+      )}
+      {isError && (
+        <div className="text-red-500 py-6">
+          Failed to load data. Please check your API key.
+        </div>
+      )}
+
+      {!isLoading && !isError && (
+        <div
+          ref={rowRef}
+          className="flex items-center gap-6 pb-10 overflow-x-auto scroll-smooth no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-none]"
+        >
+          {movies?.map((movie, index) => (
+            <MovieCard
+              key={movie.id}
+              title={movie.title || movie.name}
+              rating={movie.vote_average?.toFixed(1)}
+              image={getImageUrl(movie.poster_path)}
+              releaseDate={movie.release_date || movie.first_air_date}
+              showRank={showRank}
+              rank={index + 1}
+              rankBgColor={getRankColor(index + 1)}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 };
